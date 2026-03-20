@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="theme-color" content="#00d4aa"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="SalaryFlow"/>
+<link rel="manifest" href="manifest.json"/>
+<title>SalaryFlow</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0a0c10;
+  --bg2: #111318;
+  --bg3: #1a1d24;
+  --card: #15181f;
+  --border: #1e2230;
+  --accent: #00d4aa;
+  --accent2: #0099ff;
+  --accent3: #ff6b6b;
+  --accent4: #ffd93d;
+  --text: #e8eaf0;
+  --text2: #7b8098;
+  --text3: #4a4e63;
+  --green: #00d4aa;
+  --red: #ff6b6b;
+  --blue: #0099ff;
+  --yellow: #ffd93d;
+  --mono: 'Space Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;position:relative}
+
+/* Header */
+.header{padding:16px 20px 12px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:10}
+.header-title{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);letter-spacing:-0.5px}
+.header-sub{font-size:11px;color:var(--text2);margin-top:1px;font-family:var(--mono)}
+.month-selector{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;cursor:pointer}
+.month-selector span{font-size:12px;font-family:var(--mono);color:var(--text);font-weight:700}
+.month-selector button{background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;padding:0 2px;line-height:1}
+.month-selector button:active{color:var(--accent)}
+
+/* Page scroll area */
+.page{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 16px 80px;scroll-behavior:smooth}
+.page::-webkit-scrollbar{width:3px}
+.page::-webkit-scrollbar-track{background:transparent}
+.page::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* Bottom Nav */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg2);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-btn{flex:1;padding:10px 0 8px;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text3);transition:color 0.2s}
+.nav-btn.active{color:var(--accent)}
+.nav-btn svg{width:22px;height:22px;stroke-width:1.8}
+.nav-btn span{font-size:9px;font-family:var(--mono);letter-spacing:0.5px;text-transform:uppercase}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.card-title{font-size:11px;font-family:var(--mono);color:var(--text2);text-transform:uppercase;letter-spacing:1px}
+.card-action{background:none;border:1px solid var(--border);color:var(--accent);border-radius:8px;padding:5px 10px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all 0.2s}
+.card-action:active{background:var(--accent);color:#000}
+
+/* Dashboard stat cards */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.stat-card.wide{grid-column:1/-1}
+.stat-label{font-size:10px;font-family:var(--mono);color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
+.stat-value{font-size:22px;font-family:var(--mono);font-weight:700;line-height:1}
+.stat-value.green{color:var(--green)}
+.stat-value.red{color:var(--red)}
+.stat-value.blue{color:var(--blue)}
+.stat-value.yellow{color:var(--yellow)}
+.stat-sub{font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--mono)}
+
+/* Salary balance hero */
+.hero-card{background:linear-gradient(135deg,#001a14 0%,#002a20 50%,#001a14 100%);border:1px solid #00d4aa33;border-radius:var(--radius);padding:20px;margin-bottom:12px;position:relative;overflow:hidden}
+.hero-card::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,#00d4aa15 0%,transparent 70%);pointer-events:none}
+.hero-label{font-size:10px;font-family:var(--mono);color:#00d4aa88;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.hero-amount{font-size:36px;font-family:var(--mono);font-weight:700;color:var(--accent);line-height:1;margin-bottom:6px}
+.hero-meta{font-size:11px;color:var(--text2);display:flex;gap:16px}
+.hero-meta span{display:flex;align-items:center;gap:4px}
+
+/* Carry-forward badge */
+.carry-badge{display:inline-flex;align-items:center;gap:5px;background:#00d4aa15;border:1px solid #00d4aa30;border-radius:20px;padding:4px 10px;font-size:10px;font-family:var(--mono);color:var(--accent);margin-bottom:12px}
+
+/* Progress bar */
+.progress-wrap{margin-top:8px}
+.progress-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:4px;font-family:var(--mono)}
+.progress-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;transition:width 0.5s ease}
+.progress-fill.green{background:var(--green)}
+.progress-fill.red{background:var(--red)}
+.progress-fill.blue{background:var(--blue)}
+
+/* List items */
+.list-item{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.list-item:last-child{border-bottom:none}
+.li-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-right:12px}
+.li-body{flex:1;min-width:0}
+.li-main{font-size:13px;color:var(--text);font-weight:500}
+.li-sub{font-size:11px;color:var(--text2);margin-top:2px;font-family:var(--mono)}
+.li-amount{font-family:var(--mono);font-size:13px;font-weight:700;flex-shrink:0;margin-left:8px}
+.li-amount.green{color:var(--green)}
+.li-amount.red{color:var(--red)}
+.li-amount.blue{color:var(--blue)}
+.li-delete{background:none;border:none;color:var(--text3);cursor:pointer;padding:4px 8px;font-size:16px;flex-shrink:0}
+.li-delete:active{color:var(--red)}
+
+/* Empty state */
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty svg{width:40px;height:40px;margin-bottom:12px;stroke:var(--text3)}
+.empty p{font-size:13px;font-family:var(--mono)}
+
+/* Forms / Modals */
+.overlay{position:fixed;inset:0;background:#0008;z-index:200;display:flex;align-items:flex-end;justify-content:center;max-width:480px;margin:0 auto;left:50%;transform:translateX(-50%);width:100%}
+.modal{background:var(--bg2);border-top:1px solid var(--border);border-radius:24px 24px 0 0;padding:20px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-size:16px;font-family:var(--mono);font-weight:700;margin-bottom:20px;color:var(--text)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-family:var(--mono);color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;color:var(--text);font-family:var(--sans);font-size:15px;outline:none;transition:border-color 0.2s;-webkit-appearance:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{resize:none;height:70px}
+.field select option{background:var(--bg2)}
+.btn-row{display:flex;gap:10px;margin-top:20px}
+.btn{flex:1;padding:13px;border-radius:var(--radius-sm);border:none;font-family:var(--mono);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:active{opacity:0.85}
+.btn-secondary{background:var(--bg3);border:1px solid var(--border);color:var(--text2)}
+
+/* Section title */
+.section-title{font-size:11px;font-family:var(--mono);color:var(--text2);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;margin-top:4px}
+
+/* Chart wrapper */
+.chart-wrap{position:relative;height:180px;margin-top:8px}
+
+/* Tabs */
+.tabs{display:flex;background:var(--bg3);border-radius:var(--radius-sm);padding:3px;margin-bottom:14px}
+.tab{flex:1;padding:7px;text-align:center;font-size:11px;font-family:var(--mono);color:var(--text2);border-radius:8px;cursor:pointer;transition:all 0.2s}
+.tab.active{background:var(--card);color:var(--accent);border:1px solid var(--border)}
+
+/* Category chips */
+.cat-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.cat-chip{padding:5px 12px;border-radius:20px;font-size:11px;font-family:var(--mono);cursor:pointer;border:1px solid var(--border);color:var(--text2);background:var(--bg3);transition:all 0.2s}
+.cat-chip.active{border-color:var(--accent);color:var(--accent);background:#00d4aa15}
+
+/* Bank in/out toggle */
+.type-toggle{display:flex;background:var(--bg3);border-radius:var(--radius-sm);padding:3px;margin-bottom:14px}
+.type-btn{flex:1;padding:8px;text-align:center;font-size:12px;font-family:var(--mono);font-weight:700;border-radius:8px;cursor:pointer;transition:all 0.2s;border:none;background:none;color:var(--text2)}
+.type-btn.deposit.active{background:#00d4aa22;color:var(--green)}
+.type-btn.withdraw.active{background:#ff6b6b22;color:var(--red)}
+
+/* Toast */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:10px 20px;border-radius:30px;font-family:var(--mono);font-size:12px;font-weight:700;z-index:300;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* Month pill */
+.month-pill{display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:10px;font-family:var(--mono);color:var(--text2);margin-bottom:12px}
+.month-pill span{color:var(--accent)}
+
+/* Scrollable hidden pages */
+.page-section{display:none}
+.page-section.active{display:block}
+
+/* Report summary row */
+.report-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.report-row:last-child{border-bottom:none}
+.report-row-label{font-size:12px;color:var(--text2);font-family:var(--mono)}
+.report-row-value{font-size:14px;font-family:var(--mono);font-weight:700}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div>
+      <div class="header-title">SalaryFlow ৳</div>
+      <div class="header-sub" id="headerDate"></div>
+    </div>
+    <div class="month-selector">
+      <button onclick="changeMonth(-1)">‹</button>
+      <span id="headerMonth"></span>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+  </div>
+
+  <div class="page" id="mainPage">
+    <!-- sections injected by JS -->
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="goTo('dashboard')" id="nav-dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="nav-btn" onclick="goTo('salary')" id="nav-salary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 6v2m0 8v2M9 9h4.5a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3H15"/></svg>
+      <span>Salary</span>
+    </button>
+    <button class="nav-btn" onclick="goTo('bank')" id="nav-bank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+      <span>Bank</span>
+    </button>
+    <button class="nav-btn" onclick="goTo('expenses')" id="nav-expenses">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 14l-2-2 2-2M15 10l2 2-2 2"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6"/></svg>
+      <span>Expenses</span>
+    </button>
+    <button class="nav-btn" onclick="goTo('reports')" id="nav-reports">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      <span>Reports</span>
+    </button>
+  </nav>
+</div>
+
+<div id="modalOverlay" class="overlay" style="display:none" onclick="closeModalOutside(event)">
+  <div class="modal" id="modalBox">
+    <div class="modal-handle"></div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const FULL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CATS = ['Food','Transport','Shopping','Bills','Family','Others'];
+const CAT_COLORS = {'Food':'#ff6b6b','Transport':'#0099ff','Shopping':'#ffd93d','Bills':'#ff9f43','Family':'#a29bfe','Others':'#00d4aa'};
+
+let db = loadDB();
+let currentView = 'dashboard';
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth(); // 0-indexed
+
+function loadDB() {
+  try {
+    return JSON.parse(localStorage.getItem('salaryflow_db') || '{}');
+  } catch(e) { return {}; }
+}
+
+function saveDB() {
+  localStorage.setItem('salaryflow_db', JSON.stringify(db));
+}
+
+function getMonthKey(y, m) { return `${y}-${String(m+1).padStart(2,'0')}`; }
+function getKey() { return getMonthKey(currentYear, currentMonth); }
+
+function getMonthData(y, m) {
+  const k = getMonthKey(y, m);
+  if (!db[k]) db[k] = { salaries: [], withdrawals: [], bankTx: [], expenses: [] };
+  return db[k];
+}
+
+function getCurrentData() { return getMonthData(currentYear, currentMonth); }
+
+// Carry-forward logic
+function getSalaryBalance(y, m) {
+  // Sum all previous months' carry-forward
+  let carry = 0;
+  // Go back up to 24 months
+  let checkY = y, checkM = m - 1;
+  if (checkM < 0) { checkM = 11; checkY--; }
+  
+  // Build chain: find earliest month with data
+  let months = [];
+  let cy = checkY, cm = checkM;
+  for (let i = 0; i < 24; i++) {
+    const k = getMonthKey(cy, cm);
+    if (!db[k]) break;
+    months.unshift({y: cy, m: cm});
+    cm--;
+    if (cm < 0) { cm = 11; cy--; }
+  }
+  
+  // Calculate carry from each past month
+  carry = 0;
+  for (const {y: my, m: mm} of months) {
+    const d = getMonthData(my, mm);
+    const sal = d.salaries.reduce((s, x) => s + x.amount, 0);
+    const with_ = d.withdrawals.reduce((s, x) => s + x.amount, 0);
+    carry = Math.max(0, carry + sal - with_);
+  }
+  
+  return carry;
+}
+
+function getCurrentBalance() {
+  const d = getCurrentData();
+  const carry = getSalaryBalance(currentYear, currentMonth);
+  const sal = d.salaries.reduce((s, x) => s + x.amount, 0);
+  const with_ = d.withdrawals.reduce((s, x) => s + x.amount, 0);
+  return carry + sal - with_;
+}
+
+function getBankBalance(y, m) {
+  let bal = 0;
+  for (const k of Object.keys(db).sort()) {
+    const [ky, km1] = k.split('-').map(Number);
+    if (ky > y || (ky === y && km1 > m + 1)) break;
+    const d = db[k];
+    bal += (d.bankTx || []).reduce((s, x) => s + (x.type === 'deposit' ? x.amount : -x.amount), 0);
+  }
+  return bal;
+}
+
+function fmt(n) {
+  if (Math.abs(n) >= 100000) return '৳' + (n/100000).toFixed(1) + 'L';
+  if (Math.abs(n) >= 1000) return '৳' + (n/1000).toFixed(1) + 'k';
+  return '৳' + n.toLocaleString();
+}
+
+function fmtFull(n) { return '৳' + Number(n).toLocaleString(); }
+
+function fmtDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+}
+
+// ─── ROUTING ─────────────────────────────────────────────────────────────────
+function goTo(view) {
+  currentView = view;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-' + view).classList.add('active');
+  render();
+}
+
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  render();
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  updateHeader();
+  const page = document.getElementById('mainPage');
+  page.scrollTop = 0;
+  switch(currentView) {
+    case 'dashboard': page.innerHTML = renderDashboard(); break;
+    case 'salary': page.innerHTML = renderSalary(); break;
+    case 'bank': page.innerHTML = renderBank(); break;
+    case 'expenses': page.innerHTML = renderExpenses(); break;
+    case 'reports': page.innerHTML = renderReports(); setTimeout(renderReportCharts, 50); break;
+  }
+}
+
+function updateHeader() {
+  const now = new Date();
+  document.getElementById('headerDate').textContent = now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  document.getElementById('headerMonth').textContent = MONTHS[currentMonth] + ' ' + currentYear;
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const d = getCurrentData();
+  const balance = getCurrentBalance();
+  const carry = getSalaryBalance(currentYear, currentMonth);
+  const thisSal = d.salaries.reduce((s, x) => s + x.amount, 0);
+  const thisWith = d.withdrawals.reduce((s, x) => s + x.amount, 0);
+  const bankBal = getBankBalance(currentYear, currentMonth);
+  const expenses = d.expenses.reduce((s, x) => s + x.amount, 0);
+  const totalAdded = carry + thisSal;
+  const withPct = totalAdded > 0 ? Math.min(100, (thisWith/totalAdded)*100) : 0;
+  const expPct = thisWith > 0 ? Math.min(100, (expenses/thisWith)*100) : 0;
+
+  // Expense by category
+  const catTotals = {};
+  CATS.forEach(c => catTotals[c] = 0);
+  d.expenses.forEach(e => catTotals[e.category] = (catTotals[e.category]||0) + e.amount);
+  const topCats = Object.entries(catTotals).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+  return `
+  <div class="hero-card">
+    <div class="hero-label">Available Salary Balance</div>
+    <div class="hero-amount">${fmtFull(balance)}</div>
+    <div class="hero-meta">
+      <span>📥 Added: ${fmt(totalAdded)}</span>
+      <span>📤 Withdrawn: ${fmt(thisWith)}</span>
+    </div>
+    ${carry > 0 ? `<div style="margin-top:10px"><div class="carry-badge">↩ Carried forward: ${fmtFull(carry)}</div></div>` : ''}
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Withdrawn</span><span>${withPct.toFixed(0)}%</span></div>
+      <div class="progress-bar"><div class="progress-fill red" style="width:${withPct}%"></div></div>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">Bank Balance</div>
+      <div class="stat-value blue">${fmt(bankBal)}</div>
+      <div class="stat-sub">Total saved</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Month Expenses</div>
+      <div class="stat-value red">${fmt(expenses)}</div>
+      <div class="stat-sub">${FULL_MONTHS[currentMonth]}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">This Month Salary</div>
+      <div class="stat-value green">${fmt(thisSal)}</div>
+      <div class="stat-sub">${d.salaries.length} entr${d.salaries.length===1?'y':'ies'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Withdrawals</div>
+      <div class="stat-value yellow">${fmt(thisWith)}</div>
+      <div class="stat-sub">${d.withdrawals.length} time${d.withdrawals.length===1?'':'s'}</div>
+    </div>
+  </div>
+
+  ${topCats.length > 0 ? `
+  <div class="card">
+    <div class="card-header"><div class="card-title">Top Expenses</div></div>
+    ${topCats.map(([cat, amt]) => `
+    <div class="list-item">
+      <div class="li-dot" style="background:${CAT_COLORS[cat]}"></div>
+      <div class="li-body"><div class="li-main">${cat}</div></div>
+      <div class="li-amount red">${fmtFull(amt)}</div>
+    </div>`).join('')}
+    <div class="progress-wrap" style="margin-top:10px">
+      <div class="progress-label"><span>Expenses vs Withdrawn</span><span>${expPct.toFixed(0)}%</span></div>
+      <div class="progress-bar"><div class="progress-fill red" style="width:${expPct}%"></div></div>
+    </div>
+  </div>` : ''}
+
+  ${d.withdrawals.length > 0 ? `
+  <div class="card">
+    <div class="card-header"><div class="card-title">Recent Withdrawals</div></div>
+    ${d.withdrawals.slice(-3).reverse().map(w => `
+    <div class="list-item">
+      <div class="li-dot" style="background:var(--yellow)"></div>
+      <div class="li-body">
+        <div class="li-main">${w.note || 'Withdrawal'}</div>
+        <div class="li-sub">${fmtDate(w.date)}</div>
+      </div>
+      <div class="li-amount yellow">${fmtFull(w.amount)}</div>
+    </div>`).join('')}
+  </div>` : `
+  <div class="card">
+    <div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+      <p>No activity this month</p>
+      <p style="margin-top:6px;font-size:11px">Add salary to get started</p>
+    </div>
+  </div>`}
+  `;
+}
+
+// ─── SALARY ───────────────────────────────────────────────────────────────────
+function renderSalary() {
+  const d = getCurrentData();
+  const carry = getSalaryBalance(currentYear, currentMonth);
+  const thisSal = d.salaries.reduce((s, x) => s + x.amount, 0);
+  const thisWith = d.withdrawals.reduce((s, x) => s + x.amount, 0);
+  const balance = carry + thisSal - thisWith;
+
+  return `
+  <div class="hero-card">
+    <div class="hero-label">Net Salary Balance</div>
+    <div class="hero-amount">${fmtFull(balance)}</div>
+    <div class="hero-meta">
+      <span>This month: ${fmt(thisSal)}</span>
+      ${carry>0?`<span>Carry: +${fmt(carry)}</span>`:''}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Salary Entries</div>
+      <button class="card-action" onclick="openModal('addSalary')">+ Add</button>
+    </div>
+    ${d.salaries.length === 0 ? `<div class="empty"><p>No salary added yet</p></div>` :
+      d.salaries.map((s,i) => `
+      <div class="list-item">
+        <div class="li-dot" style="background:var(--green)"></div>
+        <div class="li-body">
+          <div class="li-main">${s.note || 'Salary'}</div>
+          <div class="li-sub">${fmtDate(s.date)}</div>
+        </div>
+        <div class="li-amount green">${fmtFull(s.amount)}</div>
+        <button class="li-delete" onclick="deleteSalary(${i})">×</button>
+      </div>`).join('')}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Withdrawals</div>
+      <button class="card-action" onclick="openModal('addWithdrawal')">+ Add</button>
+    </div>
+    ${d.withdrawals.length === 0 ? `<div class="empty"><p>No withdrawals yet</p></div>` :
+      d.withdrawals.map((w,i) => `
+      <div class="list-item">
+        <div class="li-dot" style="background:var(--yellow)"></div>
+        <div class="li-body">
+          <div class="li-main">${w.note || 'Withdrawal'}</div>
+          <div class="li-sub">${fmtDate(w.date)}</div>
+        </div>
+        <div class="li-amount yellow">-${fmtFull(w.amount)}</div>
+        <button class="li-delete" onclick="deleteWithdrawal(${i})">×</button>
+      </div>`).join('')}
+  </div>
+  `;
+}
+
+// ─── BANK ─────────────────────────────────────────────────────────────────────
+function renderBank() {
+  const d = getCurrentData();
+  const bankBal = getBankBalance(currentYear, currentMonth);
+  const monthDeposits = d.bankTx.filter(t=>t.type==='deposit').reduce((s,x)=>s+x.amount,0);
+  const monthWithdrawals = d.bankTx.filter(t=>t.type==='withdrawal').reduce((s,x)=>s+x.amount,0);
+
+  return `
+  <div class="hero-card" style="background:linear-gradient(135deg,#001226 0%,#001f3f 50%,#001226 100%);border-color:#0099ff33">
+    <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,#0099ff15 0%,transparent 70%);pointer-events:none"></div>
+    <div class="hero-label" style="color:#0099ff88">Bank Balance</div>
+    <div class="hero-amount" style="color:var(--blue)">${fmtFull(bankBal)}</div>
+    <div class="hero-meta">
+      <span>📥 In: ${fmt(monthDeposits)}</span>
+      <span>📤 Out: ${fmt(monthWithdrawals)}</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Bank Transactions</div>
+      <button class="card-action" onclick="openModal('addBank')">+ Add</button>
+    </div>
+    ${d.bankTx.length === 0 ? `<div class="empty"><p>No bank transactions yet</p></div>` :
+      d.bankTx.map((t,i) => `
+      <div class="list-item">
+        <div class="li-dot" style="background:${t.type==='deposit'?'var(--green)':'var(--red)'}"></div>
+        <div class="li-body">
+          <div class="li-main">${t.note || (t.type==='deposit'?'Deposit':'Withdrawal')}</div>
+          <div class="li-sub">${fmtDate(t.date)}</div>
+        </div>
+        <div class="li-amount ${t.type==='deposit'?'green':'red'}">${t.type==='deposit'?'+':'-'}${fmtFull(t.amount)}</div>
+        <button class="li-delete" onclick="deleteBankTx(${i})">×</button>
+      </div>`).join('')}
+  </div>
+  `;
+}
+
+// ─── EXPENSES ─────────────────────────────────────────────────────────────────
+function renderExpenses() {
+  const d = getCurrentData();
+  const total = d.expenses.reduce((s,x)=>s+x.amount,0);
+  const catTotals = {};
+  CATS.forEach(c => catTotals[c] = 0);
+  d.expenses.forEach(e => catTotals[e.category] = (catTotals[e.category]||0) + e.amount);
+
+  return `
+  <div class="hero-card" style="background:linear-gradient(135deg,#1a0a0a 0%,#2a1010 50%,#1a0a0a 100%);border-color:#ff6b6b33">
+    <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,#ff6b6b15 0%,transparent 70%);pointer-events:none"></div>
+    <div class="hero-label" style="color:#ff6b6b88">Total Expenses</div>
+    <div class="hero-amount" style="color:var(--red)">${fmtFull(total)}</div>
+    <div class="hero-meta">
+      <span>${d.expenses.length} transactions</span>
+    </div>
+  </div>
+
+  ${CATS.filter(c=>catTotals[c]>0).length>0?`
+  <div class="card">
+    <div class="card-header"><div class="card-title">By Category</div></div>
+    ${CATS.filter(c=>catTotals[c]>0).map(cat=>`
+    <div class="list-item">
+      <div class="li-dot" style="background:${CAT_COLORS[cat]}"></div>
+      <div class="li-body">
+        <div class="li-main">${cat}</div>
+        <div class="progress-wrap" style="margin-top:4px">
+          <div class="progress-bar"><div class="progress-fill" style="background:${CAT_COLORS[cat]};width:${total>0?(catTotals[cat]/total*100).toFixed(0):0}%"></div></div>
+        </div>
+      </div>
+      <div class="li-amount red" style="margin-left:12px">${fmtFull(catTotals[cat])}</div>
+    </div>`).join('')}
+  </div>`:``}
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">All Expenses</div>
+      <button class="card-action" onclick="openModal('addExpense')">+ Add</button>
+    </div>
+    ${d.expenses.length === 0 ? `<div class="empty"><p>No expenses recorded</p></div>` :
+      [...d.expenses].reverse().map((e,ri) => {
+        const i = d.expenses.length - 1 - ri;
+        return `
+        <div class="list-item">
+          <div class="li-dot" style="background:${CAT_COLORS[e.category]||'var(--red)'}"></div>
+          <div class="li-body">
+            <div class="li-main">${e.description || e.category}</div>
+            <div class="li-sub">${e.category} · ${fmtDate(e.date)}</div>
+          </div>
+          <div class="li-amount red">-${fmtFull(e.amount)}</div>
+          <button class="li-delete" onclick="deleteExpense(${i})">×</button>
+        </div>`;
+      }).join('')}
+  </div>
+  `;
+}
+
+// ─── REPORTS ──────────────────────────────────────────────────────────────────
+function renderReports() {
+  // Collect last 6 months
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    let m = currentMonth - i;
+    let y = currentYear;
+    while (m < 0) { m += 12; y--; }
+    months.push({y, m, label: MONTHS[m]});
+  }
+
+  const d = getCurrentData();
+  const carry = getSalaryBalance(currentYear, currentMonth);
+  const thisSal = d.salaries.reduce((s,x)=>s+x.amount,0);
+  const thisWith = d.withdrawals.reduce((s,x)=>s+x.amount,0);
+  const expenses = d.expenses.reduce((s,x)=>s+x.amount,0);
+  const bankBal = getBankBalance(currentYear, currentMonth);
+  const balance = carry + thisSal - thisWith;
+
+  return `
+  <div class="section-title">${FULL_MONTHS[currentMonth]} ${currentYear} Summary</div>
+  <div class="card">
+    <div class="report-row"><span class="report-row-label">Carry Forward</span><span class="report-row-value" style="color:var(--accent)">${fmtFull(carry)}</span></div>
+    <div class="report-row"><span class="report-row-label">Salary Added</span><span class="report-row-value" style="color:var(--green)">${fmtFull(thisSal)}</span></div>
+    <div class="report-row"><span class="report-row-label">Total Available</span><span class="report-row-value" style="color:var(--accent)">${fmtFull(carry+thisSal)}</span></div>
+    <div class="report-row"><span class="report-row-label">Withdrawn</span><span class="report-row-value" style="color:var(--yellow)">-${fmtFull(thisWith)}</span></div>
+    <div class="report-row"><span class="report-row-label">Expenses</span><span class="report-row-value" style="color:var(--red)">-${fmtFull(expenses)}</span></div>
+    <div class="report-row"><span class="report-row-label">Salary Balance</span><span class="report-row-value" style="color:var(--accent)">${fmtFull(balance)}</span></div>
+    <div class="report-row"><span class="report-row-label">Bank Balance</span><span class="report-row-value" style="color:var(--blue)">${fmtFull(bankBal)}</span></div>
+  </div>
+
+  <div class="section-title">6-Month Salary vs Withdrawals</div>
+  <div class="card"><div class="chart-wrap"><canvas id="chartSalary"></canvas></div></div>
+
+  <div class="section-title">6-Month Expenses</div>
+  <div class="card"><div class="chart-wrap"><canvas id="chartExpenses"></canvas></div></div>
+
+  <div class="section-title">Bank Balance Trend</div>
+  <div class="card"><div class="chart-wrap"><canvas id="chartBank"></canvas></div></div>
+  `;
+}
+
+function renderReportCharts() {
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    let m = currentMonth - i;
+    let y = currentYear;
+    while (m < 0) { m += 12; y--; }
+    months.push({y, m, label: MONTHS[m]});
+  }
+
+  const labels = months.map(x => x.label);
+  const salaries = months.map(({y,m}) => getMonthData(y,m).salaries.reduce((s,x)=>s+x.amount,0));
+  const withdrawals = months.map(({y,m}) => getMonthData(y,m).withdrawals.reduce((s,x)=>s+x.amount,0));
+  const expenses = months.map(({y,m}) => getMonthData(y,m).expenses.reduce((s,x)=>s+x.amount,0));
+  const bankBals = months.map(({y,m}) => getBankBalance(y,m));
+
+  const chartDefaults = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#7b8098', font: { family: 'Space Mono', size: 10 }, boxWidth: 12 } } },
+    scales: {
+      x: { ticks: { color: '#7b8098', font: { family: 'Space Mono', size: 10 } }, grid: { color: '#1e2230' } },
+      y: { ticks: { color: '#7b8098', font: { family: 'Space Mono', size: 10 }, callback: v => fmt(v) }, grid: { color: '#1e2230' } }
+    }
+  };
+
+  new Chart(document.getElementById('chartSalary'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Salary', data: salaries, backgroundColor: '#00d4aa44', borderColor: '#00d4aa', borderWidth: 1.5, borderRadius: 4 },
+        { label: 'Withdrawn', data: withdrawals, backgroundColor: '#ffd93d44', borderColor: '#ffd93d', borderWidth: 1.5, borderRadius: 4 }
+      ]
+    },
+    options: chartDefaults
+  });
+
+  new Chart(document.getElementById('chartExpenses'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'Expenses', data: expenses, backgroundColor: '#ff6b6b44', borderColor: '#ff6b6b', borderWidth: 1.5, borderRadius: 4 }]
+    },
+    options: chartDefaults
+  });
+
+  new Chart(document.getElementById('chartBank'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{ label: 'Bank Balance', data: bankBals, borderColor: '#0099ff', backgroundColor: '#0099ff22', borderWidth: 2, pointBackgroundColor: '#0099ff', fill: true, tension: 0.4 }]
+    },
+    options: chartDefaults
+  });
+}
+
+// ─── MODALS ───────────────────────────────────────────────────────────────────
+function openModal(type) {
+  const today = new Date().toISOString().slice(0,10);
+  let content = '';
+
+  if (type === 'addSalary') {
+    content = `
+    <div class="modal-title">Add Salary</div>
+    <div class="field"><label>Amount (৳)</label><input type="number" id="m_amount" placeholder="0" inputmode="decimal"/></div>
+    <div class="field"><label>Date</label><input type="date" id="m_date" value="${today}"/></div>
+    <div class="field"><label>Note (optional)</label><input type="text" id="m_note" placeholder="e.g. Monthly salary"/></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSalary()">Save</button>
+    </div>`;
+  } else if (type === 'addWithdrawal') {
+    content = `
+    <div class="modal-title">Add Withdrawal</div>
+    <div class="field"><label>Amount (৳)</label><input type="number" id="m_amount" placeholder="0" inputmode="decimal"/></div>
+    <div class="field"><label>Date</label><input type="date" id="m_date" value="${today}"/></div>
+    <div class="field"><label>Note (optional)</label><input type="text" id="m_note" placeholder="e.g. Partial withdrawal"/></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveWithdrawal()">Save</button>
+    </div>`;
+  } else if (type === 'addBank') {
+    content = `
+    <div class="modal-title">Bank Transaction</div>
+    <div class="type-toggle">
+      <button class="type-btn deposit active" id="typeDeposit" onclick="setType('deposit')">↑ Deposit</button>
+      <button class="type-btn withdraw" id="typeWithdraw" onclick="setType('withdrawal')">↓ Withdraw</button>
+    </div>
+    <input type="hidden" id="m_type" value="deposit"/>
+    <div class="field"><label>Amount (৳)</label><input type="number" id="m_amount" placeholder="0" inputmode="decimal"/></div>
+    <div class="field"><label>Date</label><input type="date" id="m_date" value="${today}"/></div>
+    <div class="field"><label>Note (optional)</label><input type="text" id="m_note" placeholder="e.g. Monthly savings"/></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBankTx()">Save</button>
+    </div>`;
+  } else if (type === 'addExpense') {
+    content = `
+    <div class="modal-title">Add Expense</div>
+    <div class="field"><label>Amount (৳)</label><input type="number" id="m_amount" placeholder="0" inputmode="decimal"/></div>
+    <div class="field"><label>Category</label>
+      <div class="cat-chips">${CATS.map((c,i)=>`<div class="cat-chip${i===0?' active':''}" onclick="selectCat(this,'${c}')">${c}</div>`).join('')}</div>
+      <input type="hidden" id="m_cat" value="Food"/>
+    </div>
+    <div class="field"><label>Date</label><input type="date" id="m_date" value="${today}"/></div>
+    <div class="field"><label>Description (optional)</label><input type="text" id="m_note" placeholder="e.g. Lunch"/></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveExpense()">Save</button>
+    </div>`;
+  }
+
+  document.getElementById('modalContent').innerHTML = content;
+  document.getElementById('modalOverlay').style.display = 'flex';
+  setTimeout(() => { const el = document.getElementById('m_amount'); if(el) el.focus(); }, 100);
+}
+
+function setType(t) {
+  document.getElementById('m_type').value = t;
+  document.getElementById('typeDeposit').className = 'type-btn deposit' + (t==='deposit'?' active':'');
+  document.getElementById('typeWithdraw').className = 'type-btn withdraw' + (t==='withdrawal'?' active':'');
+}
+
+function selectCat(el, cat) {
+  document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('m_cat').value = cat;
+}
+
+function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+function closeModalOutside(e) { if(e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+function getVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+function saveSalary() {
+  const amount = parseFloat(getVal('m_amount'));
+  if (!amount || amount <= 0) { showToast('Enter a valid amount'); return; }
+  const d = getCurrentData();
+  d.salaries.push({ amount, date: getVal('m_date'), note: getVal('m_note') });
+  saveDB(); closeModal(); render(); showToast('Salary added ✓');
+}
+
+function saveWithdrawal() {
+  const amount = parseFloat(getVal('m_amount'));
+  if (!amount || amount <= 0) { showToast('Enter a valid amount'); return; }
+  const d = getCurrentData();
+  d.withdrawals.push({ amount, date: getVal('m_date'), note: getVal('m_note') });
+  saveDB(); closeModal(); render(); showToast('Withdrawal saved ✓');
+}
+
+function saveBankTx() {
+  const amount = parseFloat(getVal('m_amount'));
+  if (!amount || amount <= 0) { showToast('Enter a valid amount'); return; }
+  const d = getCurrentData();
+  d.bankTx.push({ type: getVal('m_type'), amount, date: getVal('m_date'), note: getVal('m_note') });
+  saveDB(); closeModal(); render(); showToast('Bank transaction saved ✓');
+}
+
+function saveExpense() {
+  const amount = parseFloat(getVal('m_amount'));
+  if (!amount || amount <= 0) { showToast('Enter a valid amount'); return; }
+  const d = getCurrentData();
+  d.expenses.push({ amount, category: getVal('m_cat'), date: getVal('m_date'), description: getVal('m_note') });
+  saveDB(); closeModal(); render(); showToast('Expense saved ✓');
+}
+
+function deleteSalary(i) {
+  if (!confirm('Delete this salary entry?')) return;
+  getCurrentData().salaries.splice(i,1); saveDB(); render(); showToast('Deleted');
+}
+function deleteWithdrawal(i) {
+  if (!confirm('Delete this withdrawal?')) return;
+  getCurrentData().withdrawals.splice(i,1); saveDB(); render(); showToast('Deleted');
+}
+function deleteBankTx(i) {
+  if (!confirm('Delete this transaction?')) return;
+  getCurrentData().bankTx.splice(i,1); saveDB(); render(); showToast('Deleted');
+}
+function deleteExpense(i) {
+  if (!confirm('Delete this expense?')) return;
+  getCurrentData().expenses.splice(i,1); saveDB(); render(); showToast('Deleted');
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+render();
+</script>
+</body>
+</html>
